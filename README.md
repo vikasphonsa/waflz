@@ -3,7 +3,7 @@ waflz
 
 **waflz** is a modsecurity implementation only supporting restricted set of operations.
 
-**waflz** uses protocall buffers for its internal representation of modsecurity rules.
+**waflz** uses protocol buffers for its internal representation of modsecurity rules.
 The rules themselves can be expressed in one of three formats:
 * Modsecurity Rule format 
 * Protocol Buffers (Binary format)

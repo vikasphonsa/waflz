@@ -1,0 +1,343 @@
+//: ----------------------------------------------------------------------------
+//: Copyright (C) 2015 Verizon.  All Rights Reserved.
+//: All Rights Reserved
+//:
+//: \file:    waflz.proto
+//: \details: TODO
+//: \author:  Reed P. Morrison
+//: \date:    09/30/2015
+//:
+//:   Licensed under the Apache License, Version 2.0 (the "License");
+//:   you may not use this file except in compliance with the License.
+//:   You may obtain a copy of the License at
+//:
+//:       http://www.apache.org/licenses/LICENSE-2.0
+//:
+//:   Unless required by applicable law or agreed to in writing, software
+//:   distributed under the License is distributed on an "AS IS" BASIS,
+//:   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//:   See the License for the specific language governing permissions and
+//:   limitations under the License.
+//:
+//: ----------------------------------------------------------------------------
+
+package waflz_pb;
+
+//: --------------------------------------------------------------------
+//: ModSecurity SecAction Object
+//: Syntax:        [ACTIONS]
+//: Example Usage: "phase:1,log,deny,id:1"
+//: --------------------------------------------------------------------
+message sec_action_t {
+
+        //: ------------------------------------------------------------
+        //: Transformation
+        //: ------------------------------------------------------------
+        enum transformation_type_t {
+                CMDLINE = 1;
+                COMPRESSWHITESPACE = 2;
+                CSSDECODE = 3;
+                HEXENCODE = 4;
+                HEXDECODE = 5;
+                HTMLENTITYDECODE = 6;
+                JSDECODE = 7;
+                LENGTH = 8;
+                LOWERCASE = 9;
+                MD5 = 10;
+                NONE = 11;
+                NORMALIZEPATH = 12;
+                NORMALIZEPATHWIN = 13;
+                REMOVENULLS = 14;
+                REMOVEWHITESPACE = 15;
+                REPLACECOMMENTS = 16;
+                SHA1 = 17;
+                URLDECODEUNI = 18;
+                UTF8TOUNICODE = 19;
+        }
+
+        //: ------------------------------------------------------------
+        //: Action type
+        //: ------------------------------------------------------------
+        enum action_type_t {
+                PASS = 1;
+                BLOCK = 2;
+                DENY = 3;
+        }
+
+        // Properties
+        optional string id = 1;
+        optional string msg = 2;
+
+        optional action_type_t action_type = 10;
+
+        optional bool capture = 11;
+        optional bool nolog = 12;
+        optional bool log = 13;
+        optional bool multimatch = 14;
+        optional bool noauditlog = 15;
+        optional bool auditlog = 16;
+
+        optional string initcol = 20;
+        optional string status = 21;
+        optional uint32 skip = 22;
+
+        optional bool sanitisematched = 31;
+
+        optional string accuracy = 100;
+        optional string maturity = 101;
+        optional uint32 phase = 102;
+        optional string rev = 103;
+        optional string ver = 104;
+        optional string file = 105;
+
+        optional uint32 severity = 200;
+
+        repeated string tag = 300;
+
+        repeated string setvar = 400;
+        optional string logdata = 401;
+
+        // Tranformations (t)
+        repeated transformation_type_t t = 500;
+
+        // ctl ???
+        repeated string ctl = 600;
+
+        // skipafter ???
+        optional string skipafter = 700;
+
+}
+
+
+//: --------------------------------------------------------------------
+//: ModSecurity SecRule Object
+//: Syntax:        SecRule  VARIABLES  OPERATOR      [ACTIONS]
+//: Example Usage: SecRule  ARGS       "@rx attack"  "phase:1,log,deny,id:1"
+//: --------------------------------------------------------------------
+message sec_rule_t {
+
+        //: ------------------------------------------------------------
+        //: Variable
+        //: ------------------------------------------------------------
+        message variable_t {
+
+                enum type_t {
+                        ARGS = 1;
+                        ARGS_COMBINED_SIZE = 2;
+                        ARGS_NAMES = 3;
+                        ARGS_GET = 4;
+                        ARGS_GET_NAMES = 5;
+                        ARGS_POST = 6;
+                        ARGS_POST_NAMES = 7;
+                        FILES = 8;
+                        FILES_COMBINED_SIZE = 9;
+                        FILES_NAMES = 10;
+                        GLOBAL = 11;
+                        MULTIPART_STRICT_ERROR = 12;
+                        MULTIPART_UNMATCHED_BOUNDARY = 13;
+                        QUERY_STRING = 14;
+                        REMOTE_ADDR = 15;
+                        REQBODY_ERROR = 16;
+                        REQUEST_BASENAME = 17;
+                        REQUEST_BODY = 18;
+                        REQUEST_COOKIES = 19;
+                        REQUEST_COOKIES_NAMES = 20;
+                        REQUEST_FILENAME = 21;
+                        REQUEST_HEADERS = 22;
+                        REQUEST_HEADERS_NAMES = 23;
+                        REQUEST_LINE = 24;
+                        REQUEST_METHOD = 25;
+                        REQUEST_PROTOCOL = 26;
+                        REQUEST_URI = 27;
+                        RESOURCE = 28;
+                        RESPONSE_BODY = 29;
+                        RESPONSE_STATUS = 30;
+                        TX = 31;
+                        WEBSERVER_ERROR_LOG = 32;
+                        XML = 33;
+                        REQBODY_PROCESSOR = 34;
+                        MATCHED_VAR = 35;
+                        RESPONSE_HEADERS = 36;
+                        SESSION = 37;
+                }
+
+                message match_t {
+
+                        optional string value = 1;
+                        optional bool is_negated = 10;          /*
+                                                                  This format is wonky as hell.  The is_negated flag here is used to express lines like this:
+
+                                                                    SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|!ARGS:email "[\;\|\`]\W*?\bmail\b" \ "phase:2,rev:'2.1.1',capture,t....
+                                                                                                                    ^^^^^^^^^^^
+                                                                    -- https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual#secruleupdatetargetbyid
+
+                                                                  This rule will run the provided regex against request filename, all arg names, and all args EXCEPT 'email'.
+                                                                  So it's not really an 'OR' operation.  Or it is, but it's OR, except for variables of the same type, then it's ANDs?
+
+                                                                 */
+                        optional bool is_regex = 11;
+
+                }
+
+                optional type_t type = 1;
+                repeated match_t match = 2;
+                optional bool is_count = 3;
+
+        }
+
+        //: ------------------------------------------------------------
+        //: Operator
+        //: ------------------------------------------------------------
+        message operator_t {
+
+                enum type_t {
+
+                        // Auto-generate with: $ tail -n 300 modsecurity/apache2/re_operators.c | grep '",$' | sed -e 's/"//g' -e 's/,/ = /g' | tr '[:lower:]' '[:upper:]' | sort | awk '{print $0 NR ";"}'
+                        BEGINSWITH = 1;
+                        CONTAINS = 2;
+                        CONTAINSWORD = 3;
+                        DETECTSQLI = 4;
+                        DETECTXSS = 5;
+                        ENDSWITH = 6;
+                        EQ = 7;
+                        GE = 8;
+                        GEOLOOKUP = 9;
+                        GSBLOOKUP = 10;
+                        GT = 11;
+                        INSPECTFILE = 12;
+                        IPMATCH = 13;
+                        IPMATCHF = 14;
+                        IPMATCHFROMFILE = 15;
+                        LE = 16;
+                        LT = 17;
+                        NOMATCH = 18;
+                        PM = 19;
+                        PMF = 20;
+                        PMFROMFILE = 21;
+                        RBL = 22;
+                        RSUB = 23;
+                        RX = 24;
+                        STREQ = 25;
+                        STRMATCH = 26;
+                        UNCONDITIONALMATCH = 27;
+                        VALIDATEBYTERANGE = 28;
+                        VALIDATEDTD = 29;
+                        VALIDATEHASH = 30;
+                        VALIDATESCHEMA = 31;
+                        VALIDATEURLENCODING = 32;
+                        VALIDATEUTF8ENCODING = 33;
+                        VERIFYCC = 34;
+                        VERIFYCPF = 35;
+                        VERIFYSSN = 36;
+                        WITHIN = 37;
+
+                }
+
+                optional type_t type = 1;
+                optional string value = 2;
+                optional bool is_regex = 3;
+                optional bool is_negated = 10;          /*
+                                                          This is_negated is different than the is_negated in the variable.  This one is more strictly what someone would expect:
+
+                                                            SecConnWriteStateLimit 50 "!ipMatch 127.0.0.1"
+                                                                                       ^
+                                                            -- https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual#secconnwritestatelimit
+
+                                                          This rule means, do the provided action for IPs that do NOT match 127.0.0.1.
+
+                                                         */
+
+                // NON-STD-ADDITION.  The idea here is to allow someone to provide a pre-split series of values to an operator that accepts multiple values, like PM.
+                //                    rather than requiring the producer to serialized, and the consumer to split.
+                repeated string values = 4;
+
+        }
+
+        // Rule bits
+        repeated variable_t variable = 1000;
+        optional operator_t operator = 1001;
+        optional sec_action_t action = 1002;
+
+        // Chained rules
+        // NOTE: whilst this does make it possible to create trees of rules, this is not supported
+        //       There should be a single top-level rule, with a flat sequence of chained_rule entries under it
+        repeated sec_rule_t chained_rule = 2000;
+
+        // Ordering
+        optional uint32 order = 3000;
+
+        // Hidden
+        optional bool hidden = 4000;
+
+}
+
+//: ----------------------------------------------------------------------------
+//: ModSecurity Config Object
+//: ----------------------------------------------------------------------------
+message sec_config_t {
+
+        //: ------------------------------------------------------------
+        //: Marker
+        //: ------------------------------------------------------------
+        message marker_t {
+                optional string label = 1;
+                optional uint32 mark = 2;
+        }
+
+        //: ------------------------------------------------------------
+        //: Limit Action type
+        //: ------------------------------------------------------------
+        enum limit_action_type_t {
+                REJECT = 1;
+                PROCESS_PARTIAL = 2;
+        }
+
+        //: ------------------------------------------------------------
+        //: Engine type
+        //: ------------------------------------------------------------
+        enum engine_type_t {
+                ON = 1;
+                OFF = 2;
+                DETECTION_ONLY = 3;
+        }
+
+        // -------------------------------------------------
+        // Properties...
+        // -------------------------------------------------
+        optional engine_type_t rule_engine = 1;
+        optional uint32 argument_separator = 2;
+        optional string component_signature = 3;
+        optional uint32 cookie_format = 4;
+        optional string data_dir = 5;
+        optional string tmp_dir = 6;
+
+        optional bool request_body_access = 20;
+        optional uint32 request_body_in_memory_limit = 21;
+        optional uint32 request_body_limit = 22;
+        optional limit_action_type_t request_body_limit_action = 23;
+        optional uint32 request_body_no_files_limit = 24;
+
+        optional bool response_body_access = 30;
+        optional uint32 response_body_limit = 32;
+        optional limit_action_type_t response_body_limit_action = 33;
+        repeated string response_body_mime_type = 35;
+
+        optional uint32 pcre_match_limit = 100;
+        optional uint32 pcre_match_limit_recursion = 101;
+
+        // Debug
+        optional string debug_log = 1100;
+        optional uint32 debug_log_level = 1101;
+
+        // Actions
+        optional sec_action_t default_action = 1000;
+        repeated sec_action_t action = 1001;
+
+        // Markers
+        repeated marker_t marker = 2000;
+
+        // Rules
+        repeated sec_rule_t sec_rule = 3000;
+
+
+}

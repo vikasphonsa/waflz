@@ -26,12 +26,22 @@ cmake_minimum_required(VERSION 2.6.0)
 # header files to install
 LIST(APPEND INST_HDRS ${HDRS})
 
+# ----------------------------------------------------------
+# Generate _config.h file
+# ----------------------------------------------------------
+add_custom_command(
+  OUTPUT _config.h
+  COMMAND ${CMAKE_SOURCE_DIR}/util/gen_config.sh
+)
+add_custom_target(fake ALL DEPENDS _config.h)
+
 # include paths
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}
-#${CMAKE_CURRENT_BINARY_DIR}
-../../core/ndebug
-../../core/waflz
-../../core/util
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ../../core/ndebug
+  ../../core/waflz
+  ../../core/util
 )
 
 #add_definitions(-std=c++0x)

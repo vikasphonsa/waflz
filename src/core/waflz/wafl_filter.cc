@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <algorithm>
 
 // File stat
 #include <sys/stat.h>

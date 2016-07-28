@@ -53,7 +53,12 @@ done <<<"$(echo "${BUILD_DEPENDS}" | tr ',' '\n')"
 # To build...
 # ------------------------------------------------------------------------------
 mkdir -p build
-pushd build
-cmake ../
-make package
-popd
+pushd build && \
+  cmake ../ \
+    -DCMAKE_INSTALL_PREFIX=/usr && \
+  make && \
+  umask 0022 && chmod -R a+rX . && \
+  make package && \
+popd && \
+exit $?
+

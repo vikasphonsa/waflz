@@ -283,7 +283,7 @@ update_field(const google::protobuf::Reflection* reflection,
 {
 	if (!((value.*checker)())) {
 		throw std::invalid_argument("expecting type " +
-		    std::string(field->type_name()) + " for field '" +
+		    std::string(field->name()) + " for field '" +
 		    field->full_name() + "'");
 	}
 	

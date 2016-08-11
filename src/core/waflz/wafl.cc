@@ -31,6 +31,7 @@
 #include "wafl_filter.h"
 #include "wafl_parser.h"
 #include "json_protobuf/json_protobuf.h"
+#include <google/protobuf/descriptor.h>
 #include <errno.h>
 #include <string.h>
 #include <set>

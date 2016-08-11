@@ -29,6 +29,7 @@
 #include "wafl_parser.h"
 #include "util/util.h"
 #include "json_protobuf/json_protobuf.h"
+#include <google/protobuf/descriptor.h>
 
 #include <errno.h>
 #include <string.h>

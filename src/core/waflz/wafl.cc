@@ -30,7 +30,7 @@
 #include "wafl.h"
 #include "wafl_filter.h"
 #include "wafl_parser.h"
-#include "json_protobuf/json_protobuf.h"
+#include "jspb.h"
 #include <google/protobuf/descriptor.h>
 #include <errno.h>
 #include <string.h>
@@ -277,7 +277,7 @@ int32_t wafl::get_str(std::string &ao_str, wafl_parser::format_t a_format)
                 // convert protobuf message to JsonCpp object
                 try
                 {
-                        json_protobuf::convert_to_json(*m_config, ao_str);
+                        ns_jspb::convert_to_json(ao_str, *m_config);
                 }
                 catch(int e)
                 {
@@ -331,7 +331,7 @@ int32_t wafl::get_last_matched_rule_str(std::string &ao_str)
         // convert protobuf message to JsonCpp object
         try
         {
-                json_protobuf::convert_to_json(*m_last_matched_secrule, ao_str);
+                ns_jspb::convert_to_json(ao_str, *m_last_matched_secrule);
         }
         catch(int e)
         {

@@ -23,23 +23,105 @@
 project(waflz)
 cmake_minimum_required(VERSION 2.8.0)
 
-# Package Dependancies
-# find_package(Boost REQUIRED)
-
-# Definitions
-add_definitions(-std=c++0x)
-add_definitions(-Wall)
-add_definitions(-Werror)
-
-add_definitions(-Weffc++)
-#add_definitions(-pedantic)
-add_definitions(-ggdb)
-#add_definitions(-O0)
-add_definitions(-O2)
-#add_definitions(-g3 -fno-omit-frame-pointer -fsanitize=address)
-
 # Build options
-#option(enable_tests "Build the unit test suite." OFF)
+option(GCC_OPTIONS       "Command line options passed to gcc or 'native' to compile for this hardware" OFF)
+option(FORTIFY           "Fortify Source GCC options" OFF)
+option(DEBUG_MODE        "Compile in debug mode." OFF)
+option(BUILD_TCMALLOC    "Build with tcmalloc" OFF)
+option(BUILD_PROFILER    "Enable google cpu and heap profiler support" OFF)
+option(BUILD_SYMBOLS     "Build with Symbols" OFF)
+option(BUILD_ASAN        "Build with Address Sanitizer" OFF)
+option(BUILD_UBSAN       "Build with Undefined Behavior Sanitizer" OFF)
+
+# ------------------------------------------------------------------------------
+# Compiler options
+# ------------------------------------------------------------------------------
+add_definitions(-std=c++0x)
+add_definitions(-Wall -Werror -Weffc++ -Wformat -Wformat-security)
+#add_definitions(-pedantic)
+
+# ------------------------------------------------------------------------------
+# Display the current settings
+# ------------------------------------------------------------------------------
+message(STATUS "Build Configuration:")
+message("")
+message("    Build Option                               Variable                Value                 ")
+message("    -----------------------------------------------------------------------------------------")
+message("    Debug mode:                                " "DEBUG_MODE              " ${DEBUG_MODE})
+message("    Fortify Source:                            " "FORTIFY                 " ${FORTIFY})
+message("    Install path:                              " "INSTALL_PREFIX          " ${CMAKE_INSTALL_PREFIX})
+message("    Enable google cpu/heap profiler support:   " "BUILD_PROFILER          " ${BUILD_PROFILER})
+message("    Build Symbols                              " "BUILD_SYMBOLS           " ${BUILD_SYMBOLS})
+message("    Build with tcmalloc:                       " "BUILD_TCMALLOC          " ${BUILD_TCMALLOC})
+message("    Build with Address Sanitizer:              " "BUILD_ASAN              " ${BUILD_ASAN})
+message("    Build with Undefined Behavior Sanitizer:   " "BUILD_UBSAN             " ${BUILD_UBSAN})
+message("")
+
+if (FORTIFY)
+  add_definitions(-D_FORTIFY_SOURCE=2 -O1 -Wl,-z,relro,-z,now)
+endif()
+
+# ------------------------------------------------------------------------------
+# ASAN
+# ------------------------------------------------------------------------------
+if (BUILD_ASAN)
+  set(LIBRARIES ${LIBRARIES} asan)
+  add_definitions(-g3 -fno-omit-frame-pointer -fsanitize=address)
+  set(DEBUG_MODE ON)
+  set(BUILD_PROFILER OFF)
+  set(BUILD_TCMALLOC OFF)
+# ------------------------------------------------------------------------------
+# UBSAN
+# ------------------------------------------------------------------------------
+elseif (BUILD_UBSAN)
+  set(LIBRARIES ${LIBRARIES} ubsan)
+  add_definitions(-g3 -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover)
+  set(DEBUG_MODE ON)
+  set(BUILD_PROFILER OFF)
+  set(BUILD_TCMALLOC OFF)
+endif()
+
+# ------------------------------------------------------------------------------
+# Libraries options
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Build PROFILER
+# ------------------------------------------------------------------------------
+if (BUILD_PROFILER)
+  add_definitions(-DENABLE_PROFILER=1)
+  if (BUILD_UBUNTU)
+    find_ubuntu_package(LIBPROFILER google/profiler.h libprofiler.a google-perftools libgoogle-perftools-dev)
+  else()
+    set(LIBRARIES ${LIBRARIES} tcmalloc profiler)
+  endif()
+endif()
+
+# ------------------------------------------------------------------------------
+# Build TCMALLOC
+# ------------------------------------------------------------------------------
+if (BUILD_TCMALLOC)
+  if (BUILD_UBUNTU)
+    find_ubuntu_package(LIBTCMALLOC google/tcmalloc.h libtcmalloc.a "" libgoogle-perftools-dev)
+    find_ubuntu_package(LIBZMA lzma.h liblzma.a liblzma5 liblzma-dev)
+    find_ubuntu_package(LIBUNWIND libunwind.h libunwind.a "" libunwind8-dev)
+    LIST(APPEND LIBRARIES pthread)  # yes it's wierd as shit to have to include this again...
+  else()
+    set(LIBRARIES ${LIBRARIES} tcmalloc)
+  endif()
+endif()
+
+# ------------------------------------------------------------------------------
+# Optional flags
+# ------------------------------------------------------------------------------
+if (DEBUG_MODE)
+  add_definitions(-O0 -g3)
+else()
+  add_definitions(-O2)
+endif()
+if (BUILD_SYMBOLS)
+  add_definitions(-g3)
+endif()
 
 # include source and test directories
 add_subdirectory(proto)

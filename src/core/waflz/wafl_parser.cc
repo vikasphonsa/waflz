@@ -28,7 +28,7 @@
 #include "ndebug.h"
 #include "wafl_parser.h"
 #include "util/util.h"
-#include "json_protobuf/json_protobuf.h"
+#include "jspb/jspb.h"
 #include <google/protobuf/descriptor.h>
 
 #include <errno.h>
@@ -2590,10 +2590,9 @@ int32_t wafl_parser::read_file_json(const std::string &a_file, bool a_force)
         // ---------------------------------------
         // Parse
         // ---------------------------------------
-        std::string l_buf_str = l_buf;
         try
         {
-                json_protobuf::update_from_json(l_buf_str, *m_config);
+                ns_jspb::update_from_json(*m_config, l_buf, l_size);
         }
         catch(int e)
         {
